@@ -19,7 +19,7 @@ def parse_directory(path, rgb_prefix='img_', flow_x_prefix='flow_x_', flow_y_pre
 
     rgb_counts = {}
     flow_counts = {}
-    for i, f in enumerate(frame_folders):
+    for i_, f in enumerate(frame_folders):
         all_cnt = count_files(f, (rgb_prefix, flow_x_prefix, flow_y_prefix))
         k = f.split('/')[-1]
         rgb_counts[k] = all_cnt[0]
@@ -29,8 +29,8 @@ def parse_directory(path, rgb_prefix='img_', flow_x_prefix='flow_x_', flow_y_pre
         if x_cnt != y_cnt:
             raise ValueError('x and y direction have different number of flow images. video: ' + f)
         flow_counts[k] = x_cnt
-        if i % 200 == 0:
-            print('{} videos parsed'.format(i))
+        if i_ % 200 == 0:
+            print('{} videos parsed'.format(i_))
 
     print('frame folder analysis done')
     return rgb_counts, flow_counts
@@ -67,9 +67,9 @@ def parse_ucf101_splits():
         return vid, label
 
     splits = []
-    for i in range(1, 4):
-        train_list = [line2rec(x) for x in open('ucf101_splits/trainlist{:02d}.txt'.format(i))]
-        test_list = [line2rec(x) for x in open('ucf101_splits/testlist{:02d}.txt'.format(i))]
+    for i_ in range(1, 4):
+        train_list = [line2rec(x) for x in open('ucf101_splits/trainlist{:02d}.txt'.format(i_))]
+        test_list = [line2rec(x) for x in open('ucf101_splits/testlist{:02d}.txt'.format(i_))]
         splits.append((train_list, test_list))
     return splits
 
@@ -98,18 +98,14 @@ def parse_hmdb51_splits():
     class_info_list = map(parse_class_file, class_files)
 
     splits = []
-    for i in range(1, 4):
-        train_list = [
-            (vid, class_dict[cls[0]]) for cls in class_info_list for vid in cls[2] if cls[1] == i
-        ]
-        test_list = [
-            (vid, class_dict[cls[0]]) for cls in class_info_list for vid in cls[3] if cls[1] == i
-        ]
+    for i_ in range(1, 4):
+        train_list = [(vid, class_dict[cls[0]]) for cls in class_info_list for vid in cls[2] if cls[1] == i_]
+        test_list = [(vid, class_dict[cls[0]]) for cls in class_info_list for vid in cls[3] if cls[1] == i_]
         splits.append((train_list, test_list))
     return splits
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='ucf101', choices=['ucf101', 'hmdb51'])
     parser.add_argument('--frame_path', type=str, default='./ucf101_frames', help="root directory holding the frames")
@@ -151,3 +147,7 @@ if __name__ == '__main__':
         open(os.path.join(out_path, 'val_rgb_split{}.txt'.format(i + 1)), 'w').writelines(lists[0][1])
         open(os.path.join(out_path, 'train_flow_split{}.txt'.format(i + 1)), 'w').writelines(lists[1][0])
         open(os.path.join(out_path, 'val_flow_split{}.txt'.format(i + 1)), 'w').writelines(lists[1][1])
+
+
+if __name__ == '__main__':
+    main()
