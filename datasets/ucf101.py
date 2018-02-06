@@ -16,7 +16,7 @@ def find_classes(directory):
 
 def make_dataset(root, source):
     if not os.path.exists(source):
-        print("Setting file %s for ucf101 dataset doesn't exist." % (source))
+        print("Setting file %s for ucf101 dataset doesn't exist." % source)
         sys.exit()
     else:
         clips = []
@@ -98,8 +98,8 @@ def read_segment_flow(path, offsets, new_height, new_width, new_length, is_color
 class UCF101(data.Dataset):
 
     def __init__(self,
-                 root,
-                 source,
+                 data_dir,
+                 target_dir,
                  phase,
                  modality,
                  name_pattern=None,
@@ -112,15 +112,14 @@ class UCF101(data.Dataset):
                  target_transform=None,
                  video_transform=None):
 
-        classes, class_to_idx = find_classes(root)
-        clips = make_dataset(root, source)
+        classes, class_to_idx = find_classes(data_dir)
+        clips = make_dataset(data_dir, target_dir)
 
         if len(clips) == 0:
-            raise (RuntimeError("Found 0 video clips in subfolders of: " + root + "\n"
-                                                                                  "Check your data directory."))
+            raise (RuntimeError("Found 0 video clips in subfolders of: " + data_dir + "\n" + "Check your data directory."))
 
-        self.root = root
-        self.source = source
+        self.root = data_dir
+        self.source = target_dir
         self.phase = phase
         self.modality = modality
 

@@ -20,8 +20,8 @@ import datasets
 # ===============================================
 # Global Variables
 # ===============================================
-best_precision_1 = 0
-model_names = sorted(name for name in models.__dict__ if name.islower() and not name.startswith("__")  and callable(models.__dict__[name]))
+best_precision = 0
+model_names = sorted(name for name in models.__dict__ if name.islower() and not name.startswith("__") and callable(models.__dict__[name]))
 dataset_names = sorted(name for name in datasets.__all__)
 cuda = torch.cuda.is_available()
 
@@ -56,7 +56,7 @@ args = parser.parse_args()
 
 
 def main():
-    global args, best_precision_1
+    global args, best_precision
 
     # create model
     print("Building model ... ")
@@ -95,8 +95,8 @@ def main():
         precision_1 = test(test_loader, model, criterion)
 
         # remember best prec@1 and save checkpoint
-        is_best = precision_1 > best_precision_1
-        best_precision_1 = max(precision_1, best_precision_1)
+        is_best = precision_1 > best_precision
+        best_precision = max(precision_1, best_precision)
 
         if (epoch + 1) % args.save_freq == 0:
             checkpoint_name = "%03d_%s" % (epoch + 1, "checkpoint.pth.tar")
@@ -104,7 +104,7 @@ def main():
                 'epoch': epoch + 1,
                 'arch': args.arch,
                 'state_dict': model.state_dict(),
-                'best_precision_1': best_precision_1,
+                'best_precision': best_precision,
                 'optimizer': optimizer.state_dict()}, is_best, checkpoint_name, args.resume)
 
 
@@ -165,8 +165,8 @@ def build_dataloader():
     if not os.path.exists(train_split_file) or not os.path.exists(val_split_file):
         print("No split file exists in %s directory. Preprocess the dataset first" % args.settings)
 
-    train_dataset = datasets.__dict__[args.dataset](root=args.data,
-                                                    source=train_split_file,
+    train_dataset = datasets.__dict__[args.dataset](data_dir=args.data,
+                                                    target_dir=train_split_file,
                                                     phase="train",
                                                     modality=args.modality,
                                                     is_color=is_color,
@@ -174,8 +174,8 @@ def build_dataloader():
                                                     new_width=args.new_width,
                                                     new_height=args.new_height,
                                                     video_transform=train_transform)
-    val_dataset = datasets.__dict__[args.dataset](root=args.data,
-                                                  source=val_split_file,
+    val_dataset = datasets.__dict__[args.dataset](data_dir=args.data,
+                                                  target_dir=val_split_file,
                                                   phase="val",
                                                   modality=args.modality,
                                                   is_color=is_color,
@@ -186,7 +186,7 @@ def build_dataloader():
 
     print('{} samples found, {} train samples and {} test samples.'.format(len(val_dataset) + len(train_dataset), len(train_dataset), len(val_dataset)))
 
-    train_loader = torch.utils.data.DataLoader( train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=True)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=True)
     test_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=True)
 
     return train_loader, test_loader

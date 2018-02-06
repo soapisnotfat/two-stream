@@ -1,51 +1,40 @@
-'''
+"""
 A sample function for classification using spatial network
 Customize as needed:
 e.g. num_categories, layer for feature extraction, batch_size
-'''
+"""
 
-import os
-import sys
-import numpy as np
 import math
-import cv2
-import scipy.io as sio
+import os
 
+import cv2
+import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.parallel
-import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
 import torchvision.transforms as transforms
-import torchvision.datasets as datasets
-import torchvision.models as models
-
-sys.path.insert(0, "../../")
-import video_transforms
 
 
-def VideoSpatialPrediction(
+def video_spatial_prediction(
         vid_name,
         net,
         num_categories,
-        start_frame=0,
         num_frames=0,
         num_samples=25
 ):
     if num_frames == 0:
-        imglist = os.listdir(vid_name)
-        duration = len(imglist)
+        image_list = os.listdir(vid_name)
+        duration = len(image_list)
         # print(duration)
     else:
         duration = num_frames
 
     clip_mean = [0.485, 0.456, 0.406]
     clip_std = [0.229, 0.224, 0.225]
-    normalize = video_transforms.Normalize(mean=clip_mean,
-                                           std=clip_std)
-    val_transform = video_transforms.Compose([
-        video_transforms.ToTensor(),
+    normalize = transforms.Normalize(mean=clip_mean, std=clip_std)
+    val_transform = transforms.Compose([
+        transforms.ToTensor(),
         normalize,
     ])
 
@@ -93,9 +82,9 @@ def VideoSpatialPrediction(
     for bb in range(num_batches):
         span = range(batch_size * bb, min(rgb.shape[3], batch_size * (bb + 1)))
         input_data = rgb_np[span, :, :, :]
-        imgDataTensor = torch.from_numpy(input_data).type(torch.FloatTensor).cuda()
-        imgDataVar = torch.autograd.Variable(imgDataTensor)
-        output = net(imgDataVar)
+        img_data_tensor = torch.from_numpy(input_data).type(torch.FloatTensor).cuda()
+        img_data_var = torch.autograd.Variable(img_data_tensor)
+        output = net(img_data_var)
         result = output.data.cpu().numpy()
         prediction[:, span] = np.transpose(result)
 

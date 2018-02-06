@@ -84,7 +84,7 @@ def change_key_names(old_params, in_channels):
             if layer_count == 0:
                 rgb_weight = old_params[layer_key]
                 rgb_weight_mean = torch.mean(rgb_weight, dim=1)
-                flow_weight = rgb_weight_mean.repeat(1,in_channels,1,1)
+                flow_weight = rgb_weight_mean.repeat(1,  in_channels, 1, 1)
                 new_params[layer_key] = flow_weight
                 layer_count += 1
                 # print(layer_key, new_params[layer_key].size())

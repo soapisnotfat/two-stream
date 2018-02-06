@@ -6,6 +6,7 @@ import shutil
 import torch
 import torch.nn as nn
 import torch.nn.parallel
+from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
 import torch.utils.data
@@ -15,15 +16,14 @@ import video_transforms
 import models
 import datasets
 
-
 # ===============================================
 # Global Variables
 # ===============================================
-best_precision_1 = 0
-model_names = sorted(name for name in models.__dict__ if name.islower() and not name.startswith("__")  and callable(models.__dict__[name]))
+best_precision = 0
+model_names = sorted(name for name in models.__dict__ if
+                     name.islower() and not name.startswith("__") and callable(models.__dict__[name]))
 dataset_names = sorted(name for name in datasets.__all__)
 cuda = torch.cuda.is_available()
-
 
 # ===============================================
 # parsers
@@ -31,28 +31,36 @@ cuda = torch.cuda.is_available()
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition')
 parser.add_argument('data', metavar='DIR', help='path to dataset')
 parser.add_argument('--settings', metavar='DIR', default='./datasets/settings', help='path to dataset setting files')
-parser.add_argument('-m', '--modality', metavar='MODALITY', default='rgb', choices=["rgb", "flow"], help='modality: rgb | flow')
+parser.add_argument('-m', '--modality', metavar='MODALITY', default='rgb', choices=["rgb", "flow"],
+                    help='modality: rgb | flow')
 parser.add_argument('-d', '--dataset', default='ucf101', choices=["ucf101", "hmdb51"], help='dataset: ucf101 | hmdb51')
-parser.add_argument('-a', '--arch', metavar='ARCH', default='vgg16', choices=model_names,  help='model architecture: | '.join(model_names) + ' (default: vgg16)')
-parser.add_argument('-s', '--split', default=1, type=int, metavar='S', help='which split of data to work on (default: 1)')
-parser.add_argument('-j', '--workers', default=8, type=int, metavar='N', help='number of data loading workers (default: 4)')
+parser.add_argument('-a', '--arch', metavar='ARCH', default='vgg16', choices=model_names,
+                    help='model architecture: | '.join(model_names) + ' (default: vgg16)')
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
+                    help='which split of data to work on (default: 1)')
+parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
+                    help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=400, type=int, metavar='N', help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=32, type=int, metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=4, type=int, metavar='I', help='iter size as in Caffe to reduce memory usage (default: 8)')
-parser.add_argument('--new_length', default=1, type=int, metavar='N',  help='length of sampled video frames (default: 1)')
+parser.add_argument('--iter-size', default=4, type=int, metavar='I',
+                    help='iter size as in Caffe to reduce memory usage (default: 8)')
+parser.add_argument('--new_length', default=1, type=int, metavar='N',
+                    help='length of sampled video frames (default: 1)')
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float, metavar='LR', help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M', help='momentum')
-parser.add_argument('--wd', '--weight-decay', default=1e-4, type=float, metavar='W', help='weight decay (default: 1e-4)')
+parser.add_argument('--wd', '--weight-decay', default=1e-4, type=float, metavar='W',
+                    help='weight decay (default: 1e-4)')
 parser.add_argument('--print-freq', default=20, type=int, metavar='N', help='print frequency (default: 20)')
 parser.add_argument('--save-freq', default=1, type=int, metavar='N', help='save frequency (default: 20)')
-parser.add_argument('--resume', default='./checkpoints', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
+parser.add_argument('--resume', default='./checkpoints', type=str, metavar='PATH',
+                    help='path to latest checkpoint (default: none)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true', help='evaluate model on validation set')
 args = parser.parse_args()
 
 
 def main():
-    global args, best_precision_1
+    global args, best_precision
     args = parser.parse_args()
 
     # create model
@@ -62,7 +70,8 @@ def main():
 
     # define loss function (criterion), optimizer, scheduler
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), args.lr, momentum=args.momentum, weight_decay=args.weight_decay)  # TODO: Adam?
+    optimizer = optim.SGD(model.parameters(), args.lr, momentum=args.momentum,
+                          weight_decay=args.weight_decay)  # TODO: Adam?
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=150, gamma=0.1)
 
     # if run on GPU
@@ -92,8 +101,8 @@ def main():
         precision_1 = test(test_loader, model, criterion)
 
         # remember best prec@1 and save checkpoint
-        is_best = precision_1 > best_precision_1
-        best_precision_1 = max(precision_1, best_precision_1)
+        is_best = precision_1 > best_precision
+        best_precision = max(precision_1, best_precision)
 
         if (epoch + 1) % args.save_freq == 0:
             checkpoint_name = "%03d_%s" % (epoch + 1, "checkpoint.pth.tar")
@@ -101,7 +110,7 @@ def main():
                 'epoch': epoch + 1,
                 'arch': args.arch,
                 'state_dict': model.state_dict(),
-                'best_precision_1': best_precision_1,
+                'best_precision': best_precision,
                 'optimizer': optimizer.state_dict()}, is_best, checkpoint_name, args.resume)
 
 
@@ -113,7 +122,7 @@ def build_model():
 
     model_name = args.modality + "_" + args.arch
     model = models.__dict__[model_name](pretrained=True, num_classes=101)
-    if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
+    if args.arch.startswith('vgg'):
         model.features = torch.nn.DataParallel(model.features)
     else:
         model = torch.nn.DataParallel(model)
@@ -162,15 +171,26 @@ def build_dataloader():
     if not os.path.exists(train_split_file) or not os.path.exists(val_split_file):
         print("No split file exists in %s directory. Preprocess the dataset first" % args.settings)
 
-    train_dataset = datasets.__dict__[args.dataset](args.data, train_split_file, "train", args.new_length,
+    train_dataset = datasets.__dict__[args.dataset](data_dir=args.data,
+                                                    target_dir=train_split_file,
+                                                    phase="train",
+                                                    modality=args.modality,
+                                                    new_length=args.new_length,
                                                     video_transform=train_transform)
-    val_dataset = datasets.__dict__[args.dataset](args.data, val_split_file, "val", args.new_length,
+    val_dataset = datasets.__dict__[args.dataset](data_dir=args.data,
+                                                  target_dir=val_split_file,
+                                                  phase="val",
+                                                  modality=args.modality,
+                                                  new_length=args.new_length,
                                                   video_transform=val_transform)
 
-    print('{} samples found, {} train samples and {} test samples.'.format(len(val_dataset) + len(train_dataset), len(train_dataset), len(val_dataset)))
+    print('{} samples found, {} train samples and {} test samples.'.format(len(val_dataset) + len(train_dataset),
+                                                                           len(train_dataset), len(val_dataset)))
 
-    train_loader = torch.utils.data.DataLoader( train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=True)
-    test_loader = torch.utils.data.DataLoader( val_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=True)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
+                                               num_workers=args.workers, pin_memory=True)
+    test_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True,
+                                              num_workers=args.workers, pin_memory=True)
 
     return train_loader, test_loader
 
@@ -190,10 +210,11 @@ def train(train_loader, model, criterion, optimizer, epoch):
         # measure data loading time
         data_time.update(time.time() - end)
 
-        data = data.float().cuda(async=True)
-        target = target.cuda(async=True)
-        input_var = torch.autograd.Variable(data)
-        target_var = torch.autograd.Variable(target)
+        if cuda:
+            data.cuda()
+            target.cuda()
+        input_var = Variable(data)
+        target_var = Variable(target)
 
         output = model(input_var)
         loss = criterion(output, target_var)
@@ -219,7 +240,9 @@ def train(train_loader, model, criterion, optimizer, epoch):
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                  'Prec@3 {top3.val:.3f} ({top3.avg:.3f})'.format(epoch, i, len(train_loader), batch_time=batch_time, data_time=data_time, loss=losses, top1=top1, top3=top3))
+                  'Prec@3 {top3.val:.3f} ({top3.avg:.3f})'.format(epoch, i, len(train_loader), batch_time=batch_time,
+                                                                  data_time=data_time, loss=losses, top1=top1,
+                                                                  top3=top3))
 
 
 def test(test_loader, model, criterion):
@@ -257,7 +280,8 @@ def test(test_loader, model, criterion):
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                  'Prec@3 {top3.val:.3f} ({top3.avg:.3f})'.format(i, len(test_loader), batch_time=batch_time, loss=losses, top1=top1, top3=top3))
+                  'Prec@3 {top3.val:.3f} ({top3.avg:.3f})'.format(i, len(test_loader), batch_time=batch_time,
+                                                                  loss=losses, top1=top1, top3=top3))
 
     print(' * Prec@1 {top1.avg:.3f} Prec@3 {top3.avg:.3f}'
           .format(top1=top1, top3=top3))
