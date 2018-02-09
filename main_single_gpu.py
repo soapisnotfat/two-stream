@@ -16,19 +16,17 @@ import video_transforms
 import models
 import datasets
 
-
-# ===============================================
+#################################################
 # Global Variables
-# ===============================================
 best_precision = 0
 model_names = sorted(name for name in models.__dict__ if name.islower() and not name.startswith("__") and callable(models.__dict__[name]))
 dataset_names = sorted(name for name in datasets.__all__)
 cuda = torch.cuda.is_available()
+#################################################
 
 
-# ===============================================
+#################################################
 # parsers
-# ===============================================
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition')
 parser.add_argument('data', metavar='DIR', help='path to dataset')
 parser.add_argument('--settings', metavar='DIR', default='./datasets/settings', help='path to datset setting files')
@@ -53,22 +51,27 @@ parser.add_argument('--save-freq', default=25, type=int, metavar='N', help='save
 parser.add_argument('--resume', default='./checkpoints', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true', help='evaluate model on validation set')
 args = parser.parse_args()
+#################################################
 
 
 def main():
     global args, best_precision
 
+    #################################################
     # create model
     print("Building model ... ")
     model = build_model()
     print("Model %s is loaded. " % args.arch)
+    #################################################
 
+    #################################################
     # define loss function (criterion), optimizer, scheduler
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), args.lr, momentum=args.momentum, weight_decay=args.weight_decay)  # TODO: Adam?
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=150, gamma=0.1)
+    #################################################
 
-    # if run on GPU
+    # use cuda if run on GPU
     if cuda:
         criterion = nn.CrossEntropyLoss().cuda()
         cudnn.benchmark = True
@@ -92,11 +95,11 @@ def main():
         train(train_loader, model, criterion, optimizer, epoch)
 
         # evaluate on validation set
-        precision_1 = test(test_loader, model, criterion)
+        precision = test(test_loader, model, criterion)
 
         # remember best prec@1 and save checkpoint
-        is_best = precision_1 > best_precision
-        best_precision = max(precision_1, best_precision)
+        is_best = precision > best_precision
+        best_precision = max(precision, best_precision)
 
         if (epoch + 1) % args.save_freq == 0:
             checkpoint_name = "%03d_%s" % (epoch + 1, "checkpoint.pth.tar")
@@ -206,19 +209,19 @@ def train(train_loader, model, criterion, optimizer, epoch):
     acc_mini_batch = 0.0
 
     for i, (data, target) in enumerate(train_loader):
-
         if cuda:
             data.cuda()
             target.cuda()
-        input_var = Variable(data)
-        target_var = Variable(target)
+        data = Variable(data)
+        target = Variable(target)
 
-        output = model(input_var)
+        # compute output
+        output = model(data)
+        loss = criterion(output, target)
 
         # measure accuracy and record loss
-        precision_1, precision_3 = accuracy(output.data, target, topk=(1, 3))
+        precision_1, precision_3 = accuracy(output.data, target, top_k=(1, 3))
         acc_mini_batch += precision_1[0]
-        loss = criterion(output, target_var)
         loss = loss / args.iter_size
         loss_mini_batch += loss.data[0]
         loss.backward()
@@ -226,10 +229,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
         if (i + 1) % args.iter_size == 0:
             # compute gradient and do SGD step
             optimizer.step()
-            optimizer.zero_grad()
 
-            # losses.update(loss_mini_batch/args.iter_size, input.size(0))
-            # top1.update(acc_mini_batch/args.iter_size, input.size(0))
             losses.update(loss_mini_batch, data.size(0))
             top1.update(acc_mini_batch / args.iter_size, data.size(0))
             batch_time.update(time.time() - end)
@@ -255,19 +255,18 @@ def test(test_loader, model, criterion):
 
     end = time.time()
     for i, (data, target) in enumerate(test_loader):
-
         if cuda:
             data.cuda()
             target.cuda()
-        input_var = Variable(data, volatile=True)
-        target_var = Variable(target, volatile=True)
+        data = Variable(data, volatile=True)
+        target = Variable(target, volatile=True)
 
         # compute output
-        output = model(input_var)
-        loss = criterion(output, target_var)
+        output = model(data)
+        loss = criterion(output, target)
 
         # measure accuracy and record loss
-        precision_1, precision_3 = accuracy(output.data, target, topk=(1, 3))
+        precision_1, precision_3 = accuracy(output.data, target, top_k=(1, 3))
         losses.update(loss.data[0], data.size(0))
         top1.update(precision_1[0], data.size(0))
         top3.update(precision_3[0], data.size(0))
@@ -283,8 +282,7 @@ def test(test_loader, model, criterion):
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
                   'Prec@3 {top3.val:.3f} ({top3.avg:.3f})'.format(i, len(test_loader), batch_time=batch_time, loss=losses, top1=top1, top3=top3))
 
-    print(' * Prec@1 {top1.avg:.3f} Prec@3 {top3.avg:.3f}'
-          .format(top1=top1, top3=top3))
+    print(' * Prec@1 {top1.avg:.3f} Prec@3 {top3.avg:.3f}'.format(top1=top1, top3=top3))
 
     return top1.avg
 
@@ -298,7 +296,9 @@ def save_checkpoint(state, is_best, filename, resume_path):
 
 
 class AverageMeter(object):
-    """Computes and stores the average and current value"""
+    """
+    Computes and stores the average and current value
+    """
 
     def __init__(self):
         self.val = 0
@@ -313,17 +313,20 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def accuracy(output, target, topk=(1,)):
-    """Computes the precision @k for the specified values of k"""
-    maxk = max(topk)
+def accuracy(output, target, top_k=(1,)):
+    """
+    Computes the precision @k for the specified values of k
+    """
+
+    max_k = max(top_k)
     batch_size = target.size(0)
 
-    _, prediction = output.topk(maxk, 1, True, True)
+    _, prediction = output.topk(max_k, 1, True, True)
     prediction = prediction.t()
     correct = prediction.eq(target.view(1, -1).expand_as(prediction))
 
     res = []
-    for k in topk:
+    for k in top_k:
         correct_k = correct[:k].view(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res

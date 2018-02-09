@@ -16,65 +16,60 @@ import video_transforms
 import models
 import datasets
 
-# ===============================================
+#################################################
 # Global Variables
-# ===============================================
 best_precision = 0
-model_names = sorted(name for name in models.__dict__ if
-                     name.islower() and not name.startswith("__") and callable(models.__dict__[name]))
+model_names = sorted(name for name in models.__dict__ if name.islower() and not name.startswith("__") and callable(models.__dict__[name]))
 dataset_names = sorted(name for name in datasets.__all__)
 cuda = torch.cuda.is_available()
+#################################################
 
-# ===============================================
+
+#################################################
 # parsers
-# ===============================================
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition')
 parser.add_argument('data', metavar='DIR', help='path to dataset')
 parser.add_argument('--settings', metavar='DIR', default='./datasets/settings', help='path to dataset setting files')
-parser.add_argument('-m', '--modality', metavar='MODALITY', default='rgb', choices=["rgb", "flow"],
-                    help='modality: rgb | flow')
+parser.add_argument('-m', '--modality', metavar='MODALITY', default='rgb', choices=["rgb", "flow"], help='modality: rgb | flow')
 parser.add_argument('-d', '--dataset', default='ucf101', choices=["ucf101", "hmdb51"], help='dataset: ucf101 | hmdb51')
-parser.add_argument('-a', '--arch', metavar='ARCH', default='vgg16', choices=model_names,
-                    help='model architecture: | '.join(model_names) + ' (default: vgg16)')
-parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
-                    help='which split of data to work on (default: 1)')
-parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
-                    help='number of data loading workers (default: 4)')
+parser.add_argument('-a', '--arch', metavar='ARCH', default='vgg16', choices=model_names, help='model architecture: | '.join(model_names) + ' (default: vgg16)')
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S', help='which split of data to work on (default: 1)')
+parser.add_argument('-j', '--workers', default=8, type=int, metavar='N', help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=400, type=int, metavar='N', help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=32, type=int, metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=4, type=int, metavar='I',
-                    help='iter size as in Caffe to reduce memory usage (default: 8)')
-parser.add_argument('--new_length', default=1, type=int, metavar='N',
-                    help='length of sampled video frames (default: 1)')
+parser.add_argument('--iter-size', default=4, type=int, metavar='I', help='iter size as in Caffe to reduce memory usage (default: 8)')
+parser.add_argument('--new_length', default=1, type=int, metavar='N', help='length of sampled video frames (default: 1)')
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float, metavar='LR', help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M', help='momentum')
-parser.add_argument('--wd', '--weight-decay', default=1e-4, type=float, metavar='W',
-                    help='weight decay (default: 1e-4)')
+parser.add_argument('--wd', '--weight-decay', default=1e-4, type=float, metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--print-freq', default=20, type=int, metavar='N', help='print frequency (default: 20)')
 parser.add_argument('--save-freq', default=1, type=int, metavar='N', help='save frequency (default: 20)')
-parser.add_argument('--resume', default='./checkpoints', type=str, metavar='PATH',
-                    help='path to latest checkpoint (default: none)')
+parser.add_argument('--resume', default='./checkpoints', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true', help='evaluate model on validation set')
 args = parser.parse_args()
+#################################################
 
 
 def main():
     global args, best_precision
     args = parser.parse_args()
 
+    #########################################
     # create model
     print("Building model ... ")
     model = build_model()
     print("Model %s is loaded. " % (args.modality + "_" + args.arch))
+    #########################################
 
+    #########################################
     # define loss function (criterion), optimizer, scheduler
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), args.lr, momentum=args.momentum,
-                          weight_decay=args.weight_decay)  # TODO: Adam?
+    optimizer = optim.SGD(model.parameters(), args.lr, momentum=args.momentum, weight_decay=args.weight_decay)  # TODO: Adam?
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=150, gamma=0.1)
+    #########################################
 
-    # if run on GPU
+    # use cuda if run on GPU
     if cuda:
         criterion = nn.CrossEntropyLoss().cuda()
         cudnn.benchmark = True
@@ -98,11 +93,11 @@ def main():
         train(train_loader, model, criterion, optimizer, epoch)
 
         # evaluate on validation set
-        precision_1 = test(test_loader, model, criterion)
+        precision = test(test_loader, model, criterion)
 
         # remember best prec@1 and save checkpoint
-        is_best = precision_1 > best_precision
-        best_precision = max(precision_1, best_precision)
+        is_best = precision > best_precision
+        best_precision = max(precision, best_precision)
 
         if (epoch + 1) % args.save_freq == 0:
             checkpoint_name = "%03d_%s" % (epoch + 1, "checkpoint.pth.tar")
@@ -187,10 +182,8 @@ def build_dataloader():
     print('{} samples found, {} train samples and {} test samples.'.format(len(val_dataset) + len(train_dataset),
                                                                            len(train_dataset), len(val_dataset)))
 
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
-                                               num_workers=args.workers, pin_memory=True)
-    test_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True,
-                                              num_workers=args.workers, pin_memory=True)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=True)
+    test_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=True)
 
     return train_loader, test_loader
 
@@ -213,17 +206,17 @@ def train(train_loader, model, criterion, optimizer, epoch):
         if cuda:
             data.cuda()
             target.cuda()
-        input_var = Variable(data)
-        target_var = Variable(target)
+        data = Variable(data)
+        target = Variable(target)
 
-        output = model(input_var)
-        loss = criterion(output, target_var)
+        output = model(data)
+        loss = criterion(output, target)
 
         # measure accuracy and record loss
-        prec1, prec3 = accuracy(output.data, target, topk=(1, 3))
+        precision_1, precision_3 = accuracy(output.data, target, top_k=(1, 3))
         losses.update(loss.data[0], data.size(0))
-        top1.update(prec1[0], data.size(0))
-        top3.update(prec3[0], data.size(0))
+        top1.update(precision_1[0], data.size(0))
+        top3.update(precision_3[0], data.size(0))
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -256,17 +249,18 @@ def test(test_loader, model, criterion):
 
     end = time.time()
     for i, (data, target) in enumerate(test_loader):
-        data = data.float().cuda(async=True)
-        target = target.cuda(async=True)
-        input_var = torch.autograd.Variable(data, volatile=True)
-        target_var = torch.autograd.Variable(target, volatile=True)
+        if cuda:
+            data.cuda()
+            target.cuda()
+        data = torch.autograd.Variable(data, volatile=True)
+        target = torch.autograd.Variable(target, volatile=True)
 
         # compute output
-        output = model(input_var)
-        loss = criterion(output, target_var)
+        output = model(data)
+        loss = criterion(output, target)
 
         # measure accuracy and record loss
-        precision_1, precision_3 = accuracy(output.data, target, topk=(1, 3))
+        precision_1, precision_3 = accuracy(output.data, target, top_k=(1, 3))
         losses.update(loss.data[0], data.size(0))
         top1.update(precision_1[0], data.size(0))
         top3.update(precision_3[0], data.size(0))
@@ -280,11 +274,9 @@ def test(test_loader, model, criterion):
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                  'Prec@3 {top3.val:.3f} ({top3.avg:.3f})'.format(i, len(test_loader), batch_time=batch_time,
-                                                                  loss=losses, top1=top1, top3=top3))
+                  'Prec@3 {top3.val:.3f} ({top3.avg:.3f})'.format(i, len(test_loader), batch_time=batch_time, loss=losses, top1=top1, top3=top3))
 
-    print(' * Prec@1 {top1.avg:.3f} Prec@3 {top3.avg:.3f}'
-          .format(top1=top1, top3=top3))
+    print(' * Prec@1 {top1.avg:.3f} Prec@3 {top3.avg:.3f}'.format(top1=top1, top3=top3))
 
     return top1.avg
 
@@ -298,7 +290,9 @@ def save_checkpoint(state, is_best, filename, resume_path):
 
 
 class AverageMeter(object):
-    """Computes and stores the average and current value"""
+    """
+    Computes and stores the average and current value
+    """
 
     def __init__(self):
         self.val = 0
@@ -310,20 +304,24 @@ class AverageMeter(object):
         self.val = val
         self.sum += val * n
         self.count += n
+        self.count += n
         self.avg = self.sum / self.count
 
 
-def accuracy(output, target, topk=(1,)):
-    """Computes the precision@k for the specified values of k"""
-    maxk = max(topk)
+def accuracy(output, target, top_k=(1,)):
+    """
+    Computes the precision@k for the specified values of k
+    """
+
+    max_k = max(top_k)
     batch_size = target.size(0)
 
-    _, prediction = output.topk(maxk, 1, True, True)
+    _, prediction = output.topk(max_k, 1, True, True)
     prediction = prediction.t()
     correct = prediction.eq(target.view(1, -1).expand_as(prediction))
 
     res = []
-    for k in topk:
+    for k in top_k:
         correct_k = correct[:k].view(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
