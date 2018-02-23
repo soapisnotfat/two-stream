@@ -37,8 +37,8 @@ def main():
     data_loader = dataloader.SpatialDataloader(
         batch_size=arg.batch_size,
         num_workers=8,
-        path='/home/ubuntu/data/UCF101/spatial_no_sampled/',
-        ucf_list='/home/ubuntu/cvlab/pytorch/ucf101_two_stream/github/UCF_list/',
+        path='./UCF101/spatial_no_sampled/',
+        ucf_list='./UCF_list/',
         ucf_split='01',
     )
 

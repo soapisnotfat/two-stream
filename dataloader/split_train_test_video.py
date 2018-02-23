@@ -1,4 +1,4 @@
-import os
+import os, pickle
 
 
 class UCF101Splitter(object):

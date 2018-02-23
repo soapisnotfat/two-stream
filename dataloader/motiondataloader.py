@@ -11,8 +11,8 @@ from .split_train_test_video import *
 class MotionDataset(Dataset):
     def __init__(self, dic, in_channel, root_dir, mode, transform=None):
         # Generate a 16 Frame clip
-        self.keys = dic.keys()
-        self.values = dic.values()
+        self.keys = list(dic)
+        self.values = list(dic.values())
         self.root_dir = root_dir
         self.transform = transform
         self.mode = mode
@@ -32,19 +32,17 @@ class MotionDataset(Dataset):
             idx = i + j
             idx = str(idx)
             frame_idx = 'frame' + idx.zfill(6)
-            h_image = u + '/' + frame_idx + '.jpg'
-            v_image = v + '/' + frame_idx + '.jpg'
+            h_image = u + "/" + frame_idx + ".jpg"
+            v_image = v + "/" + frame_idx + ".jpg"
 
-            img_h = (Image.open(h_image))
-            img_v = (Image.open(v_image))
+            img_h = Image.open(h_image)
+            img_v = Image.open(v_image)
 
             h = self.transform(img_h)
             v = self.transform(img_v)
 
             flow[2 * (j - 1), :, :] = h
             flow[2 * (j - 1) + 1, :, :] = v
-            img_h.close()
-            img_v.close()
         return flow
 
     def __len__(self):
@@ -90,7 +88,7 @@ class MotionDataLoader(object):
 
     def load_frame_count(self):
         # print '==> Loading frame number of each video'
-        with open('dic/frame_count.pickle', 'rb') as file:
+        with open('dataloader/dic/frame_count.pickle', 'rb') as file:
             dic_frame = pickle.load(file)
         file.close()
 
@@ -130,7 +128,7 @@ class MotionDataLoader(object):
         training_set = MotionDataset(dic=self.dic_video_train, in_channel=self.in_channel, root_dir=self.data_path,
                                      mode='train',
                                      transform=transforms.Compose([
-                                          transforms.Scale([224, 224]),
+                                          transforms.Resize([224, 224]),
                                           transforms.ToTensor(),
                                       ]))
         print('==> Training data :', len(training_set), ' videos', training_set[1][0].size())
@@ -166,9 +164,9 @@ class MotionDataLoader(object):
 
 if __name__ == '__main__':
     data_loader = MotionDataLoader(batch_size=1, num_workers=1, in_channel=10,
-                                   path='/home/ubuntu/data/UCF101/tvl1_flow/',
-                                   ucf_list='/home/ubuntu/cvlab/pytorch/ucf101_two_stream/github/UCF_list/',
+                                   path='../UCF101/tvl1_flow/',
+                                   ucf_list='../UCF_list/',
                                    ucf_split='01'
                                    )
     train_loader, val_loader, test_video = data_loader.run()
-    # print train_loader,val_loader
+    print(train_loader, val_loader)

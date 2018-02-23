@@ -159,6 +159,6 @@ class SpatialDataloader(object):
 if __name__ == '__main__':
     dataloader = SpatialDataloader(batch_size=1, num_workers=1,
                                    path='/home/ubuntu/data/UCF101/spatial_no_sampled/',
-                                   ucf_list='/home/ubuntu/cvlab/pytorch/ucf101_two_stream/github/UCF_list/',
+                                   ucf_list='./UCF_list/',
                                    ucf_split='01')
     train_loader, val_loader, test_video = dataloader.run()
