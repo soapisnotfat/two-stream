@@ -22,7 +22,7 @@ from model import *
 
 parser = argparse.ArgumentParser(description='UCF101 spatial stream on resnet101')
 parser.add_argument('--epochs', default=500, type=int, metavar='N', help='number of total epochs')
-parser.add_argument('--batch-size', default=25, type=int, metavar='N', help='mini-batch size (default: 25)')
+parser.add_argument('--batch-size', default=2, type=int, metavar='N', help='mini-batch size (default: 25)')
 parser.add_argument('--lr', default=5e-4, type=float, metavar='LR', help='initial learning rate')
 parser.add_argument('--evaluate', dest='evaluate', action='store_true', help='evaluate model on validation set')
 parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
@@ -37,14 +37,14 @@ def main():
     data_loader = dataloader.SpatialDataloader(
         batch_size=arg.batch_size,
         num_workers=8,
-        path='./UCF101/spatial_no_sampled/',
+        path='./UCF101/jpegs_256/',
         ucf_list='./UCF_list/',
         ucf_split='01',
     )
 
     train_loader, test_loader, test_video = data_loader.run()
     # Model
-    model = Spatial_CNN(
+    model = SpatialCNN(
         nb_epochs=arg.epochs,
         lr=arg.lr,
         batch_size=arg.batch_size,
@@ -59,7 +59,7 @@ def main():
     model.run()
 
 
-class Spatial_CNN:
+class SpatialCNN:
     def __init__(self, nb_epochs, lr, batch_size, resume, start_epoch, evaluate, train_loader, test_loader, test_video):
         self.nb_epochs = nb_epochs
         self.lr = lr
@@ -192,9 +192,7 @@ class Spatial_CNN:
         progress = tqdm(self.test_loader)
         for i, (keys, data, label) in enumerate(progress):
 
-            label = label.cuda(async=True)
             data_var = Variable(data, volatile=True).cuda(async=True)
-            label_var = Variable(label, volatile=True).cuda(async=True)
 
             # compute output
             output = self.model(data_var)
@@ -203,14 +201,14 @@ class Spatial_CNN:
             end = time.time()
 
             # Calculate video level prediction
-            preds = output.data.cpu().numpy()
-            nb_data = preds.shape[0]
+            predictions = output.data.cpu().numpy()
+            nb_data = predictions.shape[0]
             for j in range(nb_data):
-                videoName = keys[j].split('/', 1)[0]
-                if videoName not in self.dic_video_level_preds.keys():
-                    self.dic_video_level_preds[videoName] = preds[j, :]
+                video_name = keys[j].split('/', 1)[0]
+                if video_name not in self.dic_video_level_preds.keys():
+                    self.dic_video_level_preds[video_name] = predictions[j, :]
                 else:
-                    self.dic_video_level_preds[videoName] += preds[j, :]
+                    self.dic_video_level_preds[video_name] += predictions[j, :]
 
         video_top1, video_top5, video_loss = self.frame2_video_level_accuracy()
 
@@ -230,13 +228,13 @@ class Spatial_CNN:
         ii = 0
         for name in sorted(self.dic_video_level_preds.keys()):
 
-            preds = self.dic_video_level_preds[name]
+            predictions = self.dic_video_level_preds[name]
             label = int(self.test_video[name]) - 1
 
-            video_level_preds[ii, :] = preds
+            video_level_preds[ii, :] = predictions
             video_level_labels[ii] = label
             ii += 1
-            if np.argmax(preds) == label:
+            if np.argmax(predictions) == label:
                 correct += 1
 
         # top1 top5

@@ -8,8 +8,8 @@ from .split_train_test_video import *
 class SpatialDataset(Dataset):
     def __init__(self, dic, root_dir, mode, transform=None):
 
-        self.keys = dic.keys()
-        self.values = dic.values()
+        self.keys = list(dic.keys())
+        self.values = list(dic.values())
         self.root_dir = root_dir
         self.mode = mode
         self.transform = transform
@@ -23,10 +23,9 @@ class SpatialDataset(Dataset):
             name = 'HandStandPushups_' + g
             path = self.root_dir + 'HandstandPushups' + '/separated_images/v_' + name + '/v_' + name + '_'
         else:
-            path = self.root_dir + video_name.split('_')[
-                0] + '/separated_images/v_' + video_name + '/v_' + video_name + '_'
+            path = self.root_dir + 'v_' + video_name + '/frame'
 
-        img = Image.open(path + str(index) + '.jpg')
+        img = Image.open(path + str(index).zfill(6) + '.jpg')
         transformed_img = self.transform(img)
         img.close()
 
@@ -37,8 +36,8 @@ class SpatialDataset(Dataset):
         if self.mode == 'train':
             video_name, nb_clips = self.keys[idx].split(' ')
             nb_clips = int(nb_clips)
-            clips = [random.randint(1, nb_clips / 3), random.randint(nb_clips / 3, nb_clips * 2 / 3),
-                     random.randint(nb_clips * 2 / 3, nb_clips + 1)]
+            clips = [random.randint(1, nb_clips // 3), random.randint(nb_clips // 3, nb_clips * 2 // 3),
+                     random.randint(nb_clips * 2 // 3, nb_clips + 1)]
 
         elif self.mode == 'val':
             video_name, index = self.keys[idx].split(' ')
@@ -79,7 +78,7 @@ class SpatialDataloader(object):
 
     def load_frame_count(self):
         # print '==> Loading frame number of each video'
-        with open('dic/frame_count.pickle', 'rb') as file:
+        with open('dataloader/dic/frame_count.pickle', 'rb') as file:
             dic_frame = pickle.load(file)
         file.close()
 

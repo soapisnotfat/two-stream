@@ -153,58 +153,58 @@ def resnet18(pretrained=False, channel=20, **kwargs):
     """
     Constructs a ResNet-18 model.
     """
-    model = ResNet(block=BasicBlock, layers=[2, 2, 2, 2], nb_classes=101, channel=channel, **kwargs)
+    _model = ResNet(block=BasicBlock, layers=[2, 2, 2, 2], nb_classes=101, channel=channel, **kwargs)
     if pretrained:
         pretrain_dict = model_zoo.load_url(model_urls['resnet18'])  # modify pretrain code
-        model_dict = model.state_dict()
+        model_dict = _model.state_dict()
         model_dict = weight_transform(model_dict, pretrain_dict, channel, )
-        model.load_state_dict(model_dict)
-    return model
+        _model.load_state_dict(model_dict)
+    return _model
 
 
 def resnet34(pretrained=False, channel=20, **kwargs):
-    model = ResNet(block=BasicBlock, layers=[3, 4, 6, 3], nb_classes=101, channel=channel, **kwargs)
+    _model = ResNet(block=BasicBlock, layers=[3, 4, 6, 3], nb_classes=101, channel=channel, **kwargs)
     if pretrained:
         pretrain_dict = model_zoo.load_url(model_urls['resnet34'])  # modify pretrain code
-        model_dict = model.state_dict()
+        model_dict = _model.state_dict()
         model_dict = weight_transform(model_dict, pretrain_dict, channel)
-        model.load_state_dict(model_dict)
-    return model
+        _model.load_state_dict(model_dict)
+    return _model
 
 
 def resnet50(pretrained=False, channel=20, **kwargs):
-    model = ResNet(block=Bottleneck, layers=[3, 4, 6, 3], nb_classes=101, channel=channel, **kwargs)
+    _model = ResNet(block=Bottleneck, layers=[3, 4, 6, 3], nb_classes=101, channel=channel, **kwargs)
     if pretrained:
         pretrain_dict = model_zoo.load_url(model_urls['resnet50'])  # modify pretrain code
-        model_dict = model.state_dict()
+        model_dict = _model.state_dict()
         model_dict = weight_transform(model_dict, pretrain_dict, channel)
-        model.load_state_dict(model_dict)
-    return model
+        _model.load_state_dict(model_dict)
+    return _model
 
 
 def resnet101(pretrained=False, channel=20, **kwargs):
-    model = ResNet(block=Bottleneck, layers=[3, 4, 23, 3], nb_classes=101, channel=channel, **kwargs)
+    _model = ResNet(block=Bottleneck, layers=[3, 4, 23, 3], nb_classes=101, channel=channel, **kwargs)
     if pretrained:
         pretrain_dict = model_zoo.load_url(model_urls['resnet101'])  # modify pretrain code
-        model_dict = model.state_dict()
+        model_dict = _model.state_dict()
         model_dict = weight_transform(model_dict, pretrain_dict, channel)
-        model.load_state_dict(model_dict)
-    return model
+        _model.load_state_dict(model_dict)
+    return _model
 
 
 def resnet152(pretrained=False, **kwargs):
-    model = ResNet(block=Bottleneck, layers=[3, 8, 36, 3], **kwargs)
+    _model = ResNet(block=Bottleneck, layers=[3, 8, 36, 3], **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet152']))
-    return model
+        _model.load_state_dict(model_zoo.load_url(model_urls['resnet152']))
+    return _model
 
 
 def cross_modality_pretrain(conv1_weight, channel):
     # transform the original 3 channel weight to "channel" channel
-    S = 0
+    s = 0
     for i in range(3):
-        S += conv1_weight[:, i, :, :]
-    avg = S / 3.
+        s += conv1_weight[:, i, :, :]
+    avg = s / 3.
     new_conv1_weight = torch.FloatTensor(64, channel, 7, 7)
 
     # print type(avg),type(new_conv1_weight)

@@ -49,7 +49,7 @@ def main():
 
     train_loader, test_loader, test_video = data_loader.run()
     # Model
-    model = Motion_CNN(
+    model = MotionCNN(
         # Data Loader
         train_loader=train_loader,
         test_loader=test_loader,
@@ -68,7 +68,7 @@ def main():
     model.run()
 
 
-class Motion_CNN():
+class MotionCNN:
     def __init__(self, nb_epochs, lr, batch_size, resume, start_epoch, evaluate, train_loader, test_loader, channel,
                  test_video):
         self.nb_epochs = nb_epochs
@@ -243,7 +243,7 @@ class Motion_CNN():
             video_level_preds[ii, :] = preds
             video_level_labels[ii] = label
             ii += 1
-            if np.argmax(preds) == (label):
+            if np.argmax(preds) == label:
                 correct += 1
 
         # top1 top5
