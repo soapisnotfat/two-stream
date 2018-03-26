@@ -9,6 +9,14 @@ __all__ = ['VGG', 'rgb_vgg16', 'rgb_vgg16_bn']
 model_urls = {'vgg16': 'https://download.pytorch.org/models/vgg16-397923af.pth'}
 
 
+cfg = {
+    'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
+    'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
+}
+
+
 class VGG(nn.Module):
 
     def __init__(self, features, num_classes=1000):
@@ -49,10 +57,10 @@ class VGG(nn.Module):
                 m.bias.data.zero_()
 
 
-def make_layers(cfg, batch_norm=False):
+def make_layers(standard, batch_norm=False):
     layers = []
     in_channels = 3
-    for v in cfg:
+    for v in standard:
         if v == 'M':
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
@@ -65,19 +73,9 @@ def make_layers(cfg, batch_norm=False):
     return nn.Sequential(*layers)
 
 
-cfg = {
-    'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-    'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
-}
-
-
 def rgb_vgg16(pretrained=False, **kwargs):
-    """VGG 16-layer model (configuration "D")
-
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    VGG 16-layer model (configuration "D")
     """
     model = VGG(make_layers(cfg['D']), **kwargs)
     if pretrained:
@@ -96,8 +94,9 @@ def rgb_vgg16(pretrained=False, **kwargs):
 
 
 def rgb_vgg16_bn(**kwargs):
-    """VGG 16-layer model (configuration "D") with batch normalization
-       No pretrained model available.
+    """
+    VGG 16-layer model (configuration "D") with batch normalization
+
+    No pretrained model available.
     """
     return VGG(make_layers(cfg['D'], batch_norm=True), **kwargs)
-

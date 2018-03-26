@@ -1,3 +1,3 @@
-from .ucf101 import ucf101
+from .ucf101 import UCF101
 
-__all__ = ('ucf101','hmdb51')
+__all__ = ('UCF101', 'hmdb51')

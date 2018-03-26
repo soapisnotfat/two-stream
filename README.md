@@ -73,9 +73,3 @@ For VGG16, I can obtain a 78.5% accuracy for spatial stream and 80.4% for tempor
 [Pre-trained Flow_VGG16 Model](https://drive.google.com/open?id=1mATFI0QAHj6OgzJLzw9fhXNH1kpzQmDo)
 
 I am experimenting with memory efficient DenseNet now, will release the code in a couple of days. Stay tuned.
-
-## Related Projects
-
-[TSN](https://github.com/yjxiong/temporal-segment-networks): Temporal Segment Networks: Towards Good Practices for Deep Action Recognition
-
-[Hidden Two-Stream](https://github.com/bryanyzhu/Hidden-Two-Stream): Hidden Two-Stream Convolutional Networks for Action Recognition

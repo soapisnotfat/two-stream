@@ -105,12 +105,12 @@ class ResNet(nn.Module):
                                bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.max_pool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        self.avgpool = nn.AvgPool2d(7)
+        self.avg_pool = nn.AvgPool2d(7)
         # self.fc_aux = nn.Linear(512 * block.expansion, 101)
         self.dp = nn.Dropout(p=0.7)
         self.fc_action = nn.Linear(512 * block.expansion, num_classes)
@@ -135,7 +135,7 @@ class ResNet(nn.Module):
                 nn.BatchNorm2d(planes * block.expansion),
             )
 
-        layers = []
+        layers = list()
         layers.append(block(self.inplanes, planes, stride, downsample))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
@@ -147,14 +147,14 @@ class ResNet(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-        x = self.maxpool(x)
+        x = self.max_pool(x)
 
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
 
-        x = self.avgpool(x)
+        x = self.avg_pool(x)
         x = x.view(x.size(0), -1)
         x = self.dp(x)
         x = self.fc_action(x)
@@ -164,37 +164,32 @@ class ResNet(nn.Module):
 
         return x
 
+
 def change_key_names(old_params, in_channels):
     new_params = collections.OrderedDict()
     layer_count = 0
-    allKeyList = old_params.keys()
-    for layer_key in allKeyList:
-        if layer_count >= len(allKeyList)-2:
+    all_key_list = old_params.keys()
+    for layer_key in all_key_list:
+        if layer_count >= len(all_key_list) - 2:
             # exclude fc layers
             continue
         else:
             if layer_count == 0:
                 rgb_weight = old_params[layer_key]
-                # print(type(rgb_weight))
                 rgb_weight_mean = torch.mean(rgb_weight, dim=1)
-                # TODO: ugly fix here, why torch.mean() turn tensor to Variable
-                # print(type(rgb_weight_mean))
-                flow_weight = rgb_weight_mean.unsqueeze(1).repeat(1,in_channels,1,1)
+                flow_weight = rgb_weight_mean.unsqueeze(1).repeat(1, in_channels, 1, 1)
                 new_params[layer_key] = flow_weight
                 layer_count += 1
-                # print(layer_key, new_params[layer_key].size(), type(new_params[layer_key]))
             else:
                 new_params[layer_key] = old_params[layer_key]
                 layer_count += 1
-                # print(layer_key, new_params[layer_key].size(), type(new_params[layer_key]))
-    
+
     return new_params
 
-def flow_resnet18(pretrained=False, **kwargs):
-    """Constructs a ResNet-18 model.
 
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+def flow_resnet18(pretrained=False, **kwargs):
+    """
+    Constructs a ResNet-18 model.
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
     if pretrained:
@@ -213,22 +208,20 @@ def flow_resnet18(pretrained=False, **kwargs):
 
     return model
 
-def flow_resnet34(pretrained=False, **kwargs):
-    """Constructs a ResNet-34 model.
 
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+def flow_resnet34(pretrained=False, **kwargs):
+    """
+    Constructs a ResNet-34 model.
     """
     model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['resnet34']))
     return model
 
-def flow_resnet50(pretrained=False, **kwargs):
-    """Constructs a ResNet-50 model.
 
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+def flow_resnet50(pretrained=False, **kwargs):
+    """
+    Constructs a ResNet-50 model.
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
@@ -246,11 +239,10 @@ def flow_resnet50(pretrained=False, **kwargs):
 
     return model
 
-def flow_resnet50_aux(pretrained=False, **kwargs):
-    """Constructs a ResNet-50 model.
 
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+def flow_resnet50_aux(pretrained=False, **kwargs):
+    """
+    Constructs a ResNet-50 model.
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
@@ -280,22 +272,20 @@ def flow_resnet50_aux(pretrained=False, **kwargs):
 
     return model
 
-def flow_resnet101(pretrained=False, **kwargs):
-    """Constructs a ResNet-101 model.
 
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+def flow_resnet101(pretrained=False, **kwargs):
+    """
+    Constructs a ResNet-101 model.
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['resnet101']))
     return model
 
-def flow_resnet152(pretrained=False, **kwargs):
-    """Constructs a ResNet-152 model.
 
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+def flow_resnet152(pretrained=False, **kwargs):
+    """
+    Constructs a ResNet-152 model.
     """
     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
     if pretrained:

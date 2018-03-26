@@ -75,6 +75,7 @@ cfg = {
     'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
 }
 
+
 def change_key_names(old_params, in_channels):
     new_params = collections.OrderedDict()
     layer_count = 0
@@ -83,7 +84,7 @@ def change_key_names(old_params, in_channels):
             if layer_count == 0:
                 rgb_weight = old_params[layer_key]
                 rgb_weight_mean = torch.mean(rgb_weight, dim=1)
-                flow_weight = rgb_weight_mean.repeat(1,in_channels,1,1)
+                flow_weight = rgb_weight_mean.repeat(1,  in_channels, 1, 1)
                 new_params[layer_key] = flow_weight
                 layer_count += 1
                 # print(layer_key, new_params[layer_key].size())
@@ -94,11 +95,10 @@ def change_key_names(old_params, in_channels):
 
     return new_params
 
-def flow_vgg16(pretrained=False, **kwargs):
-    """VGG 16-layer model (configuration "D")
 
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+def flow_vgg16(pretrained=False, **kwargs):
+    """
+    VGG 16-layer model (configuration "D")
     """
     model = VGG(make_layers(cfg['D']), **kwargs)
     # TODO: hardcoded for now for 10 optical flow images, set it as an argument later 
@@ -117,5 +117,3 @@ def flow_vgg16(pretrained=False, **kwargs):
         model.load_state_dict(model_dict)
 
     return model
-
-
