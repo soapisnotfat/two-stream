@@ -4,6 +4,7 @@ import random
 import torch
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
+import pickle
 
 from .split_train_test_video import *
 
@@ -19,11 +20,12 @@ class MotionDataset(Dataset):
         self.in_channel = in_channel
         self.img_rows = 224
         self.img_cols = 224
+        self.video = None
 
     def stack_optic_flow(self):
         name = 'v_' + self.video
-        u = self.root_dir + 'u/' + name
-        v = self.root_dir + 'v/' + name
+        u = str(self.root_dir + 'u/' + name)
+        v = str(self.root_dir + 'v/' + name)
 
         flow = torch.FloatTensor(2 * self.in_channel, self.img_rows, self.img_cols)
         i = int(self.clips_idx)
@@ -31,7 +33,7 @@ class MotionDataset(Dataset):
         for j in range(self.in_channel):
             idx = i + j
             idx = str(idx)
-            frame_idx = 'frame' + idx.zfill(6)
+            frame_idx = 'frame' + str(idx.zfill(6))
             h_image = u + "/" + frame_idx + ".jpg"
             v_image = v + "/" + frame_idx + ".jpg"
 
@@ -129,8 +131,7 @@ class MotionDataLoader(object):
                                      mode='train',
                                      transform=transforms.Compose([
                                           transforms.Resize([224, 224]),
-                                          transforms.ToTensor(),
-                                      ]))
+                                          transforms.ToTensor()]))
         print('==> Training data :', len(training_set), ' videos', training_set[1][0].size())
 
         train_loader = DataLoader(
@@ -145,21 +146,19 @@ class MotionDataLoader(object):
 
     def val(self):
         validation_set = MotionDataset(dic=self.dic_test_idx, in_channel=self.in_channel, root_dir=self.data_path,
-                                       mode='val',
-                                       transform=transforms.Compose([
-                                            transforms.Scale([224, 224]),
-                                            transforms.ToTensor(),
-                                        ]))
+                                       mode='val', transform=transforms.Compose([
+                                            transforms.Resize([224, 224]),
+                                            transforms.ToTensor()]))
         print('==> Validation data :', len(validation_set), ' frames', validation_set[1][1].size())
         # print validation_set[1]
 
-        val_loader = DataLoader(
+        test_loader = DataLoader(
             dataset=validation_set,
             batch_size=self.BATCH_SIZE,
             shuffle=False,
             num_workers=self.num_workers)
 
-        return val_loader
+        return test_loader
 
 
 if __name__ == '__main__':

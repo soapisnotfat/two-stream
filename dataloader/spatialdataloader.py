@@ -2,6 +2,8 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 import random
+import pickle
+
 from .split_train_test_video import *
 
 
@@ -139,7 +141,7 @@ class SpatialDataloader(object):
     def validate(self):
         validation_set = SpatialDataset(dic=self.dic_testing, root_dir=self.data_path, mode='val',
                                         transform=transforms.Compose([
-                                            transforms.Scale([224, 224]),
+                                            transforms.Resize([224, 224]),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
                                         ]))

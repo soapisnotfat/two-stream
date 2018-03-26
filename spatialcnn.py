@@ -1,17 +1,10 @@
 import numpy as np
 import pickle
-import os
-from PIL import Image
 import time
 from tqdm import tqdm
-import shutil
-from random import randint
 import argparse
 
-import torchvision.transforms as transforms
-import torchvision.models as models
 import torch.nn as nn
-import torch
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -71,6 +64,11 @@ class SpatialCNN:
         self.test_loader = test_loader
         self.best_prec1 = 0
         self.test_video = test_video
+
+        self.model = None
+        self.criterion = None
+        self.optimizer = None
+        self.scheduler = None
 
     def build_model(self):
         print('==> Build model and setup loss and optimizer')

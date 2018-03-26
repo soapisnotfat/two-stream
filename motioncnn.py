@@ -1,17 +1,10 @@
 import numpy as np
 import pickle
-from PIL import Image
 import time
 import tqdm
-import shutil
-from random import randint
 import argparse
 
-from torch.utils.data import Dataset, DataLoader
-import torchvision.transforms as transforms
-import torchvision.models as models
 import torch.nn as nn
-import torch
 from tqdm import tqdm
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
@@ -82,6 +75,13 @@ class MotionCNN:
         self.best_prec1 = 0
         self.channel = channel
         self.test_video = test_video
+
+        self.model = None
+        self.criterion = None
+        self.optimizer = None
+        self.scheduler = None
+
+        self.epoch = 0
 
     def build_model(self):
         print('==> Build model and setup loss and optimizer')
