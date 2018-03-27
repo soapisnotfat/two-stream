@@ -37,22 +37,17 @@ def run_optical_flow(vid_item):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="extract optical flows")
-    parser.add_argument("--src_dir", type=str, default='./UCF-101',
-                        help='path to the video data')
-    parser.add_argument("--out_dir", type=str, default='./ucf101_frames',
-                        help='path to store frames and optical flow')
-    parser.add_argument("--df_path", type=str, default='./dense_flow/',
-                        help='path to the dense_flow toolbox')
+    parser.add_argument("--src_dir", type=str, default='./UCF-101', help='path to the video data')
+    parser.add_argument("--out_dir", type=str, default='./ucf101_frames', help='path to store frames and optical flow')
+    parser.add_argument("--df_path", type=str, default='./dense_flow/', help='path to the dense_flow toolbox')
 
     parser.add_argument("--new_width", type=int, default=0, help='resize image width')
     parser.add_argument("--new_height", type=int, default=0, help='resize image height')
 
     parser.add_argument("--num_worker", type=int, default=8)
     parser.add_argument("--num_gpu", type=int, default=2, help='number of GPU')
-    parser.add_argument("--out_format", type=str, default='dir', choices=['dir', 'zip'],
-                        help='path to the dense_flow toolbox')
-    parser.add_argument("--ext", type=str, default='avi', choices=['avi', 'mp4'],
-                        help='video file extensions')
+    parser.add_argument("--out_format", type=str, default='dir', choices=['dir', 'zip'], help='path to the dense_flow toolbox')
+    parser.add_argument("--ext", type=str, default='avi', choices=['avi', 'mp4'], help='video file extensions')
 
     args = parser.parse_args()
 
