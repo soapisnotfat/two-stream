@@ -1,7 +1,7 @@
 import pickle
 import numpy as np
 
-from utils import *
+from misc import *
 import dataloader
 
 
@@ -18,8 +18,8 @@ if __name__ == '__main__':
     f.close()
 
     dataloader = dataloader.SpatialDataloader(batch_size=1, num_workers=1,
-                                              path='/home/ubuntu/data/UCF101/spatial_no_sampled/',  # TODO ???
-                                              ucf_list='.UCF_list/',
+                                              path='./UCF101/jpegs_256/',  # TODO ???
+                                              ucf_list='./UCF_list/',
                                               ucf_split='01')
     train_loader, val_loader, test_video = dataloader.run()
 

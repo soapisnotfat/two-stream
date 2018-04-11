@@ -10,15 +10,16 @@ from torch.autograd import Variable
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 import dataloader
-from utils import *
+from misc import *
 from model import *
+
 
 parser = argparse.ArgumentParser(description='UCF101 spatial stream on resnet101')
 parser.add_argument('--epochs', default=500, type=int, metavar='N', help='number of total epochs')
 parser.add_argument('--batch-size', default=2, type=int, metavar='N', help='mini-batch size (default: 25)')
 parser.add_argument('--lr', default=5e-4, type=float, metavar='LR', help='initial learning rate')
 parser.add_argument('--evaluate', dest='evaluate', action='store_true', help='evaluate model on validation set')
-parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
+parser.add_argument('--resume', default='./models/model.tar', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='manual epoch number (useful on restarts)')
 
 
@@ -30,14 +31,15 @@ def main():
     data_loader = dataloader.SpatialDataloader(
         batch_size=arg.batch_size,
         num_workers=8,
-        path='./UCF101/jpegs_256/',
-        ucf_list='./UCF_list/',
+        path='../jpegs_256/',
+        ucf_list='./UCF101/UCF_list/',
         ucf_split='01',
     )
 
     train_loader, test_loader, test_video = data_loader.run()
+
     # Model
-    model = SpatialCNN(
+    solver = SpatialCNN(
         nb_epochs=arg.epochs,
         lr=arg.lr,
         batch_size=arg.batch_size,
@@ -48,8 +50,12 @@ def main():
         test_loader=test_loader,
         test_video=test_video
     )
+
     # Training
-    model.run()
+    solver.build_model()
+    solver.model.load_state_dict(torch.load('./models/model.tar')['state_dict'])
+    cudnn.benchmark = True
+    solver.validate_1epoch()
 
 
 class SpatialCNN:
@@ -73,7 +79,7 @@ class SpatialCNN:
     def build_model(self):
         print('==> Build model and setup loss and optimizer')
         # build model
-        self.model = resnet101(pretrained=True, channel=3).cuda()
+        self.model = resnet152(pretrained=False).cuda()
         # Loss function and optimizer
         self.criterion = nn.CrossEntropyLoss().cuda()
         self.optimizer = torch.optim.SGD(self.model.parameters(), self.lr, momentum=0.9)
@@ -104,14 +110,14 @@ class SpatialCNN:
 
         for self.epoch in range(self.start_epoch, self.nb_epochs):
             self.train_1epoch()
-            prec1, val_loss = self.validate_1epoch()
-            is_best = prec1 > self.best_prec1
+            precision_1, val_loss = self.validate_1epoch()
+            is_best = precision_1 > self.best_prec1
             # lr_scheduler
             self.scheduler.step(val_loss)
             # save model
             if is_best:
-                self.best_prec1 = prec1
-                with open('record/spatial/spatial_video_preds.pickle', 'wb') as f:
+                self.best_prec1 = precision_1
+                with open('./record/spatial/spatial_video_preds.pickle', 'wb') as f:
                     pickle.dump(self.dic_video_level_preds, f)
                 f.close()
 
@@ -120,7 +126,7 @@ class SpatialCNN:
                 'state_dict': self.model.state_dict(),
                 'best_prec1': self.best_prec1,
                 'optimizer': self.optimizer.state_dict()
-            }, is_best, 'record/spatial/checkpoint.pth.tar', 'record/spatial/model_best.pth.tar')
+            }, is_best, './record/spatial/checkpoint.pth.tar', 'record/spatial/model_best.pth.tar')
 
     def train_1epoch(self):
         print('==> Epoch:[{0}/{1}][training stage]'.format(self.epoch, self.nb_epochs))
@@ -178,16 +184,15 @@ class SpatialCNN:
         record_info(info, 'record/spatial/rgb_train.csv', 'train')
 
     def validate_1epoch(self):
-        print('==> Epoch:[{0}/{1}][validation stage]'.format(self.epoch, self.nb_epochs))
+        print('==> Epoch:[{0}/{1}][validation stage]'.format(0, 1))
         batch_time = AverageMeter()
-        losses = AverageMeter()
-        top1 = AverageMeter()
-        top5 = AverageMeter()
+
         # switch to evaluate mode
         self.model.eval()
         self.dic_video_level_preds = {}
         end = time.time()
         progress = tqdm(self.test_loader)
+
         for i, (keys, data, label) in enumerate(progress):
 
             data_var = Variable(data, volatile=True).cuda(async=True)
@@ -203,8 +208,10 @@ class SpatialCNN:
             nb_data = predictions.shape[0]
             for j in range(nb_data):
                 video_name = keys[j].split('/', 1)[0]
+
                 if video_name not in self.dic_video_level_preds.keys():
                     self.dic_video_level_preds[video_name] = predictions[j, :]
+
                 else:
                     self.dic_video_level_preds[video_name] += predictions[j, :]
 

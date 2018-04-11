@@ -7,7 +7,10 @@ import torch
 
 # other util
 def accuracy(output, target, topk=(1,)):
-    """Computes the precision@k for the specified values of k"""
+    """
+    Computes the precision@k for the specified values of k
+    """
+
     max_k = max(topk)
     batch_size = target.size(0)
 
@@ -23,7 +26,9 @@ def accuracy(output, target, topk=(1,)):
 
 
 class AverageMeter(object):
-    """Computes and stores the average and current value"""
+    """
+    Computes and stores the average and current value
+    """
 
     def __init__(self):
         self.val = 0
@@ -80,5 +85,6 @@ def record_info(info, filename, mode):
 
     if not os.path.isfile(filename):
         df.to_csv(filename, index=False, columns=column_names)
+
     else:  # else it exists so append without writing the header
         df.to_csv(filename, mode='a', header=False, index=False, columns=column_names)

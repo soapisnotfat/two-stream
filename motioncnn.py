@@ -10,7 +10,7 @@ import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from utils import *
+from misc import *
 from model import *
 import dataloader
 
@@ -35,7 +35,7 @@ def main():
         batch_size=arg.batch_size,
         num_workers=8,
         path='./UCF101/tvl1_flow/',
-        ucf_list='./UCF_list/',
+        ucf_list='./UCF101/UCF_list/',
         ucf_split='01',
         in_channel=10,
     )

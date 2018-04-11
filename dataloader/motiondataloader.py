@@ -85,11 +85,10 @@ class MotionDataLoader(object):
         self.in_channel = in_channel
         self.data_path = path
         # split the training and testing videos
-        splitter = UCF101Splitter(path=ucf_list, split=ucf_split)
-        self.train_video, self.test_video = splitter.split_video()
+        _splitter = UCF101Splitter(path=ucf_list, split=ucf_split)
+        self.train_video, self.test_video = _splitter.split_video()
 
     def load_frame_count(self):
-        # print '==> Loading frame number of each video'
         with open('dataloader/dic/frame_count.pickle', 'rb') as file:
             dic_frame = pickle.load(file)
         file.close()
@@ -97,8 +96,6 @@ class MotionDataLoader(object):
         for line in dic_frame:
             video_name = line.split('_', 1)[1].split('.', 1)[0]
             n, g = video_name.split('_', 1)
-            if n == 'HandStandPushups':
-                video_name = 'HandstandPushups_' + g
             self.frame_count[video_name] = dic_frame[line]
 
     def run(self):
@@ -110,7 +107,7 @@ class MotionDataLoader(object):
 
     def val_sample19(self):
         self.dic_test_idx = {}
-        # print len(self.test_video)
+
         for video in self.test_video:
 
             sampling_interval = int((self.frame_count[video] - 10 + 1) / 19)
@@ -132,17 +129,13 @@ class MotionDataLoader(object):
                                      transform=transforms.Compose([
                                           transforms.Resize([224, 224]),
                                           transforms.ToTensor()]))
+
         print('==> Training data :', len(training_set), ' videos', training_set[1][0].size())
 
-        train_loader = DataLoader(
-            dataset=training_set,
-            batch_size=self.BATCH_SIZE,
-            shuffle=True,
-            num_workers=self.num_workers,
-            pin_memory=True
-        )
+        training_loader = DataLoader(dataset=training_set, batch_size=self.BATCH_SIZE,
+                                     shuffle=True, num_workers=self.num_workers, pin_memory=True)
 
-        return train_loader
+        return training_loader
 
     def val(self):
         validation_set = MotionDataset(dic=self.dic_test_idx, in_channel=self.in_channel, root_dir=self.data_path,
@@ -150,7 +143,6 @@ class MotionDataLoader(object):
                                             transforms.Resize([224, 224]),
                                             transforms.ToTensor()]))
         print('==> Validation data :', len(validation_set), ' frames', validation_set[1][1].size())
-        # print validation_set[1]
 
         test_loader = DataLoader(
             dataset=validation_set,
@@ -162,9 +154,11 @@ class MotionDataLoader(object):
 
 
 if __name__ == '__main__':
+    # for testing
+
     data_loader = MotionDataLoader(batch_size=1, num_workers=1, in_channel=10,
                                    path='../UCF101/tvl1_flow/',
-                                   ucf_list='../UCF_list/',
+                                   ucf_list='../UCF101/UCF_list/',
                                    ucf_split='01'
                                    )
     train_loader, val_loader, test_video = data_loader.run()

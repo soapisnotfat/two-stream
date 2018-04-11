@@ -6,8 +6,11 @@ class UCF101Splitter(object):
         self.path = path
         self.split = split
 
-    def get_action_index(self):
         self.action_label = {}
+        self.train_video = None
+        self.test_video = None
+
+    def get_action_index(self):
         with open(self.path + 'classInd.txt') as f:
             content = f.readlines()
             content = [x.strip('\r\n') for x in content]
@@ -24,8 +27,10 @@ class UCF101Splitter(object):
             for filename in files:
                 if filename.split('.')[0] == 'trainlist' + self.split:
                     train_video = self.file2_dic(self.path + filename)
+
                 if filename.split('.')[0] == 'testlist' + self.split:
                     test_video = self.file2_dic(self.path + filename)
+
         print('==> (Training video, Validation video):(', len(train_video), len(test_video), ')')
         self.train_video = self.name_handstand_pushups(train_video)
         self.test_video = self.name_handstand_pushups(test_video)
@@ -36,27 +41,32 @@ class UCF101Splitter(object):
         with open(fname) as f:
             content = f.readlines()
             content = [x.strip('\r\n') for x in content]
+
         f.close()
         dic = {}
+
         for line in content:
-            # print line
             video = line.split('/', 1)[1].split(' ', 1)[0]
             key = video.split('_', 1)[1].split('.', 1)[0]
             label = self.action_label[line.split('/')[0]]
             dic[key] = int(label)
-            # print key,label
+
         return dic
 
     @staticmethod
     def name_handstand_pushups(dic):
         dic2 = {}
+
         for video in dic:
             n, g = video.split('_', 1)
             if n == 'HandStandPushups':
                 videoname = 'HandstandPushups_' + g
+
             else:
                 videoname = video
+
             dic2[videoname] = dic[video]
+
         return dic2
 
 

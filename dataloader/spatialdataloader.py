@@ -20,12 +20,7 @@ class SpatialDataset(Dataset):
         return len(self.keys)
 
     def load_ucf_image(self, video_name, index):
-        if video_name.split('_')[0] == 'HandstandPushups':
-            n, g = video_name.split('_', 1)
-            name = 'HandStandPushups_' + g
-            path = self.root_dir + 'HandstandPushups' + '/separated_images/v_' + name + '/v_' + name + '_'
-        else:
-            path = self.root_dir + 'v_' + video_name + '/frame'
+        path = self.root_dir + 'v_' + video_name + '/frame'
 
         img = Image.open(path + str(index).zfill(6) + '.jpg')
         transformed_img = self.transform(img)
@@ -74,9 +69,13 @@ class SpatialDataloader(object):
         self.num_workers = num_workers
         self.data_path = path
         self.frame_count = {}
+
         # split the training and testing videos
-        splitter = UCF101Splitter(path=ucf_list, split=ucf_split)
-        self.train_video, self.test_video = splitter.split_video()
+        _splitter = UCF101Splitter(path=ucf_list, split=ucf_split)
+        self.train_video, self.test_video = _splitter.split_video()
+
+        self.dic_training = dict()
+        self.dic_testing = dict()
 
     def load_frame_count(self):
         # print '==> Loading frame number of each video'
@@ -85,36 +84,36 @@ class SpatialDataloader(object):
         file.close()
 
         for line in dic_frame:
-            videoname = line.split('_', 1)[1].split('.', 1)[0]
-            n, g = videoname.split('_', 1)
-            if n == 'HandStandPushups':
-                videoname = 'HandstandPushups_' + g
-            self.frame_count[videoname] = dic_frame[line]
+            video_name = line.split('_', 1)[1].split('.', 1)[0]
+            self.frame_count[video_name] = dic_frame[line]
 
     def run(self):
         self.load_frame_count()
         self.get_training_dic()
         self.val_sample20()
-        train_loader = self.train()
-        val_loader = self.validate()
+        training_loader = self.train()
+        validate_loader = self.validate()
 
-        return train_loader, val_loader, self.test_video
+        return training_loader, validate_loader, self.test_video
 
     def get_training_dic(self):
         # print '==> Generate frame numbers of each training video'
-        self.dic_training = {}
+        self.dic_training = dict()
+
         for video in self.train_video:
-            # print videoname
+            # print video_name
             nb_frame = self.frame_count[video] - 10 + 1
             key = video + ' ' + str(nb_frame)
             self.dic_training[key] = self.train_video[video]
 
     def val_sample20(self):
         print('==> sampling testing frames')
-        self.dic_testing = {}
+        self.dic_testing = dict()
+
         for video in self.test_video:
             nb_frame = self.frame_count[video] - 10 + 1
             interval = int(nb_frame / 19)
+
             for i in range(19):
                 frame = i * interval
                 key = video + ' ' + str(frame + 1)
@@ -128,15 +127,11 @@ class SpatialDataloader(object):
                                           transforms.ToTensor(),
                                           transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
                                       ]))
-        print('==> Training data :', len(training_set), 'frames')
-        print(training_set[1][0]['img1'].size())
 
-        train_loader = DataLoader(
-            dataset=training_set,
-            batch_size=self.BATCH_SIZE,
-            shuffle=True,
-            num_workers=self.num_workers)
-        return train_loader
+        print('==> Training data :', len(training_set), 'frames')
+
+        training_loader = DataLoader(dataset=training_set, batch_size=self.BATCH_SIZE, shuffle=True, num_workers=self.num_workers)
+        return training_loader
 
     def validate(self):
         validation_set = SpatialDataset(dic=self.dic_testing, root_dir=self.data_path, mode='val',
@@ -147,19 +142,14 @@ class SpatialDataloader(object):
                                         ]))
 
         print('==> Validation data :', len(validation_set), 'frames')
-        print(validation_set[1][1].size())
 
-        val_loader = DataLoader(
-            dataset=validation_set,
-            batch_size=self.BATCH_SIZE,
-            shuffle=False,
-            num_workers=self.num_workers)
-        return val_loader
+        validate_loader = DataLoader(dataset=validation_set, batch_size=self.BATCH_SIZE, shuffle=False, num_workers=self.num_workers)
+        return validate_loader
 
 
 if __name__ == '__main__':
-    dataloader = SpatialDataloader(batch_size=1, num_workers=1,
-                                   path='/home/ubuntu/data/UCF101/spatial_no_sampled/',
-                                   ucf_list='./UCF_list/',
-                                   ucf_split='01')
-    train_loader, val_loader, test_video = dataloader.run()
+    data_loader = SpatialDataloader(batch_size=1, num_workers=1,
+                                    path='../UCF101/jpegs_256/',
+                                    ucf_list='../UCF101/UCF_list/',
+                                    ucf_split='01')
+    train_loader, val_loader, test_video = data_loader.run()
