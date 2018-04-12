@@ -12,7 +12,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from misc import *
 from model import *
-import dataloader
+import data
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
@@ -31,7 +31,7 @@ def main():
     print(arg)
 
     # Prepare DataLoader
-    data_loader = dataloader.MotionDataLoader(
+    data_loader = data.MotionDataLoader(
         batch_size=arg.batch_size,
         num_workers=8,
         path='./UCF101/tvl1_flow/',

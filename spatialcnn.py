@@ -9,7 +9,7 @@ import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-import dataloader
+import data
 from misc import *
 from model import *
 
@@ -28,7 +28,7 @@ def main():
     arg = parser.parse_args()
 
     # Prepare DataLoader
-    data_loader = dataloader.SpatialDataloader(
+    data_loader = data.SpatialDataloader(
         batch_size=arg.batch_size,
         num_workers=8,
         path='../jpegs_256/',

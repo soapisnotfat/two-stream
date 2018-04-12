@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 
 from misc import *
-import dataloader
+import data
 
 
 if __name__ == '__main__':
@@ -17,10 +17,10 @@ if __name__ == '__main__':
         opf = pickle.load(f)
     f.close()
 
-    dataloader = dataloader.SpatialDataloader(batch_size=1, num_workers=1,
-                                              path='./UCF101/jpegs_256/',  # TODO ???
-                                              ucf_list='./UCF_list/',
-                                              ucf_split='01')
+    dataloader = data.SpatialDataloader(batch_size=1, num_workers=1,
+                                        path='./UCF101/jpegs_256/',  # TODO ???
+                                        ucf_list='./UCF_list/',
+                                        ucf_split='01')
     train_loader, val_loader, test_video = dataloader.run()
 
     video_level_predictions = np.zeros((len(rgb.keys()), 101))

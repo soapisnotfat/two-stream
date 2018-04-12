@@ -79,7 +79,7 @@ class SpatialDataloader(object):
 
     def load_frame_count(self):
         # print '==> Loading frame number of each video'
-        with open('dataloader/dic/frame_count.pickle', 'rb') as file:
+        with open('data/dic/frame_count.pickle', 'rb') as file:
             dic_frame = pickle.load(file)
         file.close()
 
