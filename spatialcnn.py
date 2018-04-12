@@ -53,7 +53,8 @@ def main():
 
     # Training
     solver.build_model()
-    solver.model.load_state_dict(torch.load('./models/model.tar')['state_dict'])
+    # solver.model.load_state_dict(torch.load('./models/model.tar'))
+    # torch.save(solver.model.state_dict(), './models/-1.tar')
     cudnn.benchmark = True
     solver.validate_1epoch()
 
@@ -217,11 +218,10 @@ class SpatialCNN:
 
         video_top1, video_top5, video_loss = self.frame2_video_level_accuracy()
 
-        info = {'Epoch': [self.epoch],
-                'Batch Time': [round(batch_time.avg, 3)],
-                'Loss': [round(video_loss, 5)],
-                'Prec@1': [round(video_top1, 3)],
-                'Prec@5': [round(video_top5, 3)]}
+        info = {'Batch Time': [batch_time],
+                'Loss': [video_loss],
+                'Prec@1': [video_top1],
+                'Prec@5': [video_top5]}
         record_info(info, 'record/spatial/rgb_test.csv', 'test')
         return video_top1, video_loss
 
